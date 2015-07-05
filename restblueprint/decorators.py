@@ -67,6 +67,8 @@ def jsonout(method=None, hrefs: dict=None, async: bool=False):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
+        self.request.jsoncall = True
+
         # call the actual method
         result = method(self, *args, **kwargs)
         # write result
