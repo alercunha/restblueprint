@@ -21,7 +21,7 @@ class HrefHandler:
         self.full_pattern = self.pattern
 
     def set_full_pattern(self, url_prefix: str):
-        self.full_pattern = '{0}/{1}'.format(url_prefix.rstrip('/').lstrip('/'), self.pattern)
+        self.full_pattern = '{0}/{1}'.format(url_prefix.rstrip('/'), self.pattern)
 
     @staticmethod
     def _get_values(data: dict, parent_data: dict, value_keys: list):
@@ -32,7 +32,7 @@ class HrefHandler:
 
     @staticmethod
     def _set_data(data: dict, parent_data: dict, key: str, host: str, values: list, pattern: str):
-        data[key] = '{0}/{1}'.format(host, pattern.format(*values))
+        data[key] = '{0}/{1}'.format(host, pattern.lstrip('/').format(*values))
 
     def set_data(self, data: dict, parent_data: dict, key: str, host: str, values: list):
         if all([i is not None for i in values]):

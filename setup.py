@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='restblueprint',
-    version='0.0.5',
+    version='0.0.6',
     description='REST API blueprint for tornado web servers',
     author='Alexandre Cunha',
     author_email='alexandre.cunha@gmail.com',
