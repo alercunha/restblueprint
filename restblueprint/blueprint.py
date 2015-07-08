@@ -12,7 +12,7 @@ def register_blueprint(tornado_app, prefix: str, blueprint):
     href_types = HrefTypes()
     if getattr(blueprint, 'href_types', None):
         for href_type in blueprint.href_types:
-            href_type.set_base_url(prefix)
+            href_type.set_url_prefix(prefix)
             href_types.add_type(href_type)
 
 

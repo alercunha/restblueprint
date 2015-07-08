@@ -22,8 +22,9 @@ def write_result_to_handler(result, handler, href_type: str=None):
     if result is not None:
         if href_type:
             HrefTypes().resolve(result, href_type, handler.request)
+        indent = 1 if handler.get_query_argument('pretty', None) == 'true' else None
         handler.set_header('Content-Type', 'application/json')
-        handler.write(json.dumps(result, default=json_handler, sort_keys=True, indent=1))
+        handler.write(json.dumps(result, default=json_handler, sort_keys=True, indent=indent))
     else:
         handler.set_header('Content-Type', 'text/plain')
         handler.set_status(204)

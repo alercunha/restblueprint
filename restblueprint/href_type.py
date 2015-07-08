@@ -4,22 +4,24 @@ class HrefType:
         self.handlers = handlers
         self.inner_types = inner_types
 
-    def set_base_url(self, base_url: str):
-        for handler in self.handlers:
-            handler.set_full_pattern(base_url)
+    def set_url_prefix(self, url_prefix: str):
+        handlers = [h for h in self.handlers if h.relative_href]
+        for handler in handlers:
+            handler.set_full_pattern(url_prefix)
 
 
 class HrefHandler:
-    def __init__(self, path: str, pattern: str, value_key, get_values_func=None, set_data_func=None):
+    def __init__(self, path: str, pattern: str, value_key, relative_href=True, get_values_func=None, set_data_func=None):
         self.path = path.split('.')
-        self.pattern = pattern
+        self.pattern = pattern.lstrip('/')
         self.value_keys = value_key if isinstance(value_key, list) else [value_key]
+        self.relative_href = relative_href
         self.get_values_func = get_values_func or self._get_values
         self.set_data_func = set_data_func or self._set_data
         self.full_pattern = self.pattern
 
-    def set_full_pattern(self, base_url: str):
-        self.full_pattern = '{0}/{1}'.format(base_url.rstrip('/'), self.pattern.lstrip('/'))
+    def set_full_pattern(self, url_prefix: str):
+        self.full_pattern = '{0}/{1}'.format(url_prefix.rstrip('/').lstrip('/'), self.pattern)
 
     @staticmethod
     def _get_values(data: dict, parent_data: dict, value_keys: list):
@@ -30,7 +32,7 @@ class HrefHandler:
 
     @staticmethod
     def _set_data(data: dict, parent_data: dict, key: str, host: str, values: list, pattern: str):
-        data[key] = host + pattern.format(*values)
+        data[key] = '{0}/{1}'.format(host, pattern.format(*values))
 
     def set_data(self, data: dict, parent_data: dict, key: str, host: str, values: list):
         if all([i is not None for i in values]):
