@@ -1,5 +1,5 @@
-from restblueprint.href_handler import (
-    HrefHandlers, HrefHandler
+from restblueprint.href_type import (
+    HrefHandler, HrefType
 )
 
 from restblueprint.blueprint import (

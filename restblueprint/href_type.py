@@ -1,19 +1,25 @@
-from collections import defaultdict
+class HrefType:
+    def __init__(self, name, handlers: list, inner_types=list()):
+        self.name = name
+        self.handlers = handlers
+        self.inner_types = inner_types
+
+    def set_base_url(self, base_url: str):
+        for handler in self.handlers:
+            handler.set_full_pattern(base_url)
 
 
 class HrefHandler:
-    def __init__(self, href_type: str, path: str, pattern: str, value_key, get_values_func=None, set_data_func=None):
-        self.href_type = href_type
+    def __init__(self, path: str, pattern: str, value_key, get_values_func=None, set_data_func=None):
         self.path = path.split('.')
-        self.pattern = pattern.lstrip('/')
+        self.pattern = pattern
         self.value_keys = value_key if isinstance(value_key, list) else [value_key]
-        self.base_url = ''
         self.get_values_func = get_values_func or self._get_values
         self.set_data_func = set_data_func or self._set_data
+        self.full_pattern = self.pattern
 
-    @property
-    def full_pattern(self):
-        return '{0}/{1}'.format(self.base_url.rstrip('/'), self.pattern.lstrip('/'))
+    def set_full_pattern(self, base_url: str):
+        self.full_pattern = '{0}/{1}'.format(base_url.rstrip('/'), self.pattern.lstrip('/'))
 
     @staticmethod
     def _get_values(data: dict, parent_data: dict, value_keys: list):
@@ -31,22 +37,28 @@ class HrefHandler:
             self.set_data_func(data, parent_data, key, host, values, self.full_pattern)
 
 
-class HrefHandlers:
+class HrefTypes:
     def __new__(cls, *args, **kwds):
         it = cls.__dict__.get("__it__")
         if it is None:
             cls.__it__ = it = object.__new__(cls)
             it.__init__()
-            it.handlers = defaultdict(list)
+            it.href_types = {}
         return it
 
     def __init__(self):
         pass
 
-    def add_handler(self, handler: HrefHandler):
-        self.handlers[handler.href_type].append(handler)
+    def add_type(self, href_type: HrefType):
+        if href_type.name in self.href_types:
+            raise Exception('HrefType already exists: {0}'.format(href_type.name))
+        self.href_types[href_type.name] = href_type
 
-    def resolve(self, data, hrefs: dict, request):
+    def resolve(self, data, href_type_name: str, request):
+        href_type = self.href_types[href_type_name]
+        self._resolve(data, href_type, request)
+
+    def _resolve(self, data, href_type: HrefType, request):
         """
         Resolves all hrefs of provided data using request's information
         :param data: list or dict being processed
@@ -54,22 +66,21 @@ class HrefHandlers:
         """
         if isinstance(data, list):
             for i in data:
-                self.resolve(i, hrefs, request)
+                self._resolve(i, href_type, request)
         elif isinstance(data, dict):
-            href_type = hrefs['type']
             # resolve hrefs
-            for handler in self.handlers[href_type]:
+            for handler in href_type.handlers:
                 for next_data, key in self.navigate(data, handler.path):
                     # calculate href and set it to the data
                     values = handler.get_values(next_data, data)
                     host = '{0}://{1}'.format(request.protocol, request.host)
                     handler.set_data(next_data, data, key, host, values)
             # resolve inners
-            if 'inner' in hrefs:
-                for path, inner_hrefs in hrefs['inner']:
-                    for inner_data, key in self.navigate(data, path.split('.')):
-                        if key in inner_data:
-                            self.resolve(inner_data[key], inner_hrefs, request)
+            for path, inner_type in href_type.inner_types:
+                inner_href_type = self.href_types[inner_type]
+                for inner_data, key in self.navigate(data, path.split('.')):
+                    if key in inner_data:
+                        self._resolve(inner_data[key], inner_href_type, request)
 
     def navigate(self, data: dict, path: list):
         """
