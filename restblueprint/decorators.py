@@ -13,7 +13,7 @@ def json_handler(obj):
     return None
 
 
-def write_result_to_handler(result, handler, href_type: str=None):
+def write_result_to_handler(result, handler, href_type: str=None, pretty: bool=False):
     # evaluate enumerator if needed
     if isinstance(result, types.GeneratorType):
         result = list(result)
@@ -22,7 +22,7 @@ def write_result_to_handler(result, handler, href_type: str=None):
     if result is not None:
         if href_type:
             HrefTypes().resolve(result, href_type, handler.request)
-        indent = 1 if handler.get_query_argument('pretty', None) == 'true' else None
+        indent = 1 if pretty or handler.get_query_argument('pretty', None) == 'true' else None
         handler.set_header('Content-Type', 'application/json')
         handler.write(json.dumps(result, default=json_handler, sort_keys=True, indent=indent))
     else:
@@ -30,12 +30,12 @@ def write_result_to_handler(result, handler, href_type: str=None):
         handler.set_status(204)
 
 
-def jsoncall(method=None, input_schema: dict=None, href_type: str=None):
+def jsoncall(method=None, input_schema: dict=None, href_type: str=None, pretty: bool=False):
     # If called without method, we've been called with optional arguments.
     # We return a decorator with the optional arguments filled in.
     # Next time round we'll be decorating method.
     if method is None:
-        return functools.partial(jsoncall, input_schema=input_schema, href_type=href_type)
+        return functools.partial(jsoncall, input_schema=input_schema, href_type=href_type, pretty=pretty)
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
@@ -54,17 +54,17 @@ def jsoncall(method=None, input_schema: dict=None, href_type: str=None):
         # call the actual handler method
         result = method(self, *args, **kwargs)
         # write result
-        write_result_to_handler(result, self, href_type)
+        write_result_to_handler(result, self, href_type, pretty)
 
     return wrapper
 
 
-def jsonout(method=None, href_type: str=None, async: bool=False):
+def jsonout(method=None, href_type: str=None, async: bool=False, pretty: bool=False):
     # If called without method, we've been called with optional arguments.
     # We return a decorator with the optional arguments filled in.
     # Next time round we'll be decorating method.
     if method is None:
-        return functools.partial(jsonout, href_type=href_type, async=async)
+        return functools.partial(jsonout, href_type=href_type, async=async, pretty=pretty)
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
@@ -73,7 +73,7 @@ def jsonout(method=None, href_type: str=None, async: bool=False):
         # call the actual method
         result = method(self, *args, **kwargs)
         # write result
-        write_result_to_handler(result, self, href_type)
+        write_result_to_handler(result, self, href_type, pretty)
         # if coming from async call then must finish request manually
         if async:
             self.finish()
