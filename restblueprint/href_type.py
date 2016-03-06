@@ -11,6 +11,8 @@ class HrefType:
 
 
 class HrefHandler:
+    parent_placeholder = '$parent'
+
     def __init__(self, path: str, pattern: str, value_key, relative_href=True, get_values_func=None, set_data_func=None):
         self.path = path.split('.')
         self.pattern = pattern.lstrip('/')
@@ -25,7 +27,14 @@ class HrefHandler:
 
     @staticmethod
     def _get_values(data: dict, parent_data: dict, value_keys: list):
-        return [data.get(i) for i in value_keys]
+        values = []
+        for key in value_keys:
+            if key.startswith(HrefHandler.parent_placeholder + '.'):
+                value = parent_data.get(key[len(HrefHandler.parent_placeholder) + 1:])
+            else:
+                value = data.get(key)
+            values.append(value)
+        return values
 
     def get_values(self, data: dict, parent_data: dict):
         return self.get_values_func(data, parent_data, self.value_keys)
