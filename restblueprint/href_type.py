@@ -40,12 +40,12 @@ class HrefHandler:
         return self.get_values_func(data, parent_data, self.value_keys)
 
     @staticmethod
-    def _set_data(data: dict, parent_data: dict, key: str, host: str, values: list, pattern: str):
-        data[key] = '{0}/{1}'.format(host, pattern.lstrip('/').format(*values))
+    def _set_data(data: dict, parent_data: dict, key: str, base_url: str, values: list, pattern: str):
+        data[key] = '{0}/{1}'.format(base_url, pattern.lstrip('/').format(*values))
 
-    def set_data(self, data: dict, parent_data: dict, key: str, host: str, values: list):
+    def set_data(self, data: dict, parent_data: dict, key: str, base_url: str, values: list):
         if all([i is not None for i in values]):
-            self.set_data_func(data, parent_data, key, host, values, self.full_pattern)
+            self.set_data_func(data, parent_data, key, base_url, values, self.full_pattern)
 
 
 class HrefTypes:
@@ -67,31 +67,31 @@ class HrefTypes:
 
     def resolve(self, data, href_type_name: str, request):
         href_type = self.href_types[href_type_name]
-        self._resolve(data, href_type, request)
+        base_url = '{0}://{1}'.format(request.protocol, request.host)
+        self._resolve(data, href_type, base_url)
 
-    def _resolve(self, data, href_type: HrefType, request):
+    def _resolve(self, data, href_type: HrefType, base_url: str):
         """
         Resolves all hrefs of provided data using request's information
         :param data: list or dict being processed
-        :param request: original http request containing the host information in order to build the hrefs
+        :param base_url: host base url
         """
         if isinstance(data, list):
             for i in data:
-                self._resolve(i, href_type, request)
+                self._resolve(i, href_type, base_url)
         elif isinstance(data, dict):
             # resolve hrefs
             for handler in href_type.handlers:
                 for next_data, key in self.navigate(data, handler.path):
                     # calculate href and set it to the data
                     values = handler.get_values(next_data, data)
-                    host = '{0}://{1}'.format(request.protocol, request.host)
-                    handler.set_data(next_data, data, key, host, values)
+                    handler.set_data(next_data, data, key, base_url, values)
             # resolve inners
             for path, inner_type in href_type.inner_types:
                 inner_href_type = self.href_types[inner_type]
                 for inner_data, key in self.navigate(data, path.split('.')):
                     if key in inner_data:
-                        self._resolve(inner_data[key], inner_href_type, request)
+                        self._resolve(inner_data[key], inner_href_type, base_url)
 
     def navigate(self, data: dict, path: list):
         """
