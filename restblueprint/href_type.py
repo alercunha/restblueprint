@@ -1,6 +1,3 @@
-from restblueprint import USE_HTTPS
-
-
 class HrefType:
     def __init__(self, name, handlers: list, inner_types=list()):
         self.name = name
@@ -53,6 +50,7 @@ class HrefTypes:
             cls.__it__ = it = object.__new__(cls)
             it.__init__()
             it.href_types = {}
+            it.use_https = False
         return it
 
     def __init__(self):
@@ -65,7 +63,7 @@ class HrefTypes:
 
     def resolve(self, data, href_type_name: str, request):
         href_type = self.href_types[href_type_name]
-        protocol = 'https' if USE_HTTPS else request.protocol
+        protocol = 'https' if HrefTypes().use_https else request.protocol
         base_url = '{0}://{1}'.format(protocol, request.host)
         self._resolve(data, href_type, base_url)
 

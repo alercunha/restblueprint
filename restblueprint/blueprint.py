@@ -29,3 +29,7 @@ def join(prefixes: list):
         return prefixes[0]
     path = '{0}/{1}'.format(prefixes[0].rstrip('/'), prefixes[1].lstrip('/'))
     return join([path] + prefixes[2:])
+
+
+def use_https(use: bool):
+    HrefTypes().use_https = use
