@@ -1,3 +1,5 @@
+USE_HTTPS = False
+
 from restblueprint.href_type import (
     HrefHandler, HrefType
 )
