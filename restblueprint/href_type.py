@@ -8,7 +8,8 @@ class HrefType:
 class HrefHandler:
     parent_placeholder = '$parent'
 
-    def __init__(self, path: str, pattern: str, value_key, href_depth=0, get_values_func=None, set_data_func=None):
+    def __init__(self, path: str, pattern: str, value_key, href_depth=0,
+                 get_values_func=None, set_data_func=None, absolute_pattern=False):
         self.path = path.split('.')
         self.pattern = pattern.lstrip('/')
         self.value_keys = value_key if isinstance(value_key, list) else [value_key]
@@ -16,9 +17,11 @@ class HrefHandler:
         self.get_values_func = get_values_func or self._get_values
         self.set_data_func = set_data_func or self._set_data
         self.full_pattern = self.pattern
+        self.absolute_pattern = absolute_pattern
 
     def set_full_pattern(self, url_prefix: str):
-        self.full_pattern = '{0}/{1}'.format(url_prefix.rstrip('/'), self.pattern)
+        if not self.absolute_pattern:
+            self.full_pattern = '{0}/{1}'.format(url_prefix.rstrip('/'), self.pattern)
 
     @staticmethod
     def _get_values(data: dict, parent_data: dict, value_keys: list):
